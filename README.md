@@ -1,5 +1,7 @@
 # PC-TEE
 
+## Website
+
 Environment preparation: 
 
 ```bash
@@ -16,4 +18,22 @@ Run the service:
 
 ```bash
 python app.py
+```
+
+## Train the Model
+
+```bash
+pip install tensorflow
+```
+
+Generate data:
+
+```bash
+python generate.py
+```
+
+Train a simple model:
+
+```bash
+python train.py
 ```
