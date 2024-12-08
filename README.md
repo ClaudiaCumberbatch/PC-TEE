@@ -3,7 +3,7 @@
 ## Build the Environment
 
 ```bash
-pip install flask tensorflow
+pip install flask pandas scikit-learn tensorflow
 ```
 
 ## Train the Model
