@@ -1,6 +1,7 @@
 import tensorflow as tf
 import pandas as pd
 import sys
+import time
 
 # 从CSV文件中加载数据
 def load_data(file_path):
@@ -15,6 +16,8 @@ def main():
         sys.exit(1)
 
     train_data_path = sys.argv[1]
+
+    start = time.time()
 
     # 加载训练数据
     X_train, y_train = load_data(train_data_path)
@@ -32,7 +35,10 @@ def main():
                   metrics=['accuracy'])
 
     # 训练模型
-    model.fit(X_train, y_train, epochs=10, batch_size=32)
+    model.fit(X_train, y_train, epochs=50, batch_size=32)
+
+    end = time.time()
+    print("训练模型共耗时: {:.2f}秒".format(end - start))
 
     # 保存模型
     model.save('trained_model.h5')

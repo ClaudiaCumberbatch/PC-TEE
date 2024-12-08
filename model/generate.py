@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 # 生成模拟数据
-def generate_data(num_samples=1000):
+def generate_data(num_samples=10000):
     np.random.seed(42)
     # 模拟特征：姓名长度、年龄、收入（随机生成）
     name_length = np.random.randint(3, 10, num_samples)  # 姓名长度（字符数）
