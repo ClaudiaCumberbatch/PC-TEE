@@ -22,7 +22,7 @@ python train.py train_data.csv
 
 ## Website
 
-Generate TSL key (key.pem is private key and cert.pem is certificate).
+Generate TLS key (key.pem is private key and cert.pem is certificate).
 
 ```bash
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
