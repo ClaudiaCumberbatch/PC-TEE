@@ -38,7 +38,12 @@ def main():
     data['prediction'] = predictions
 
     # 输出结果
-    print(data.to_csv(index=False))
+    # print(data.to_csv(index=False))
+
+    # 保存结果到新的 CSV 文件
+    output_file = 'predictions.csv'
+    data.to_csv(output_file, index=False)
+    print(f"预测结果已保存到 {output_file}")
 
 if __name__ == "__main__":
     main()

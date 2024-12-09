@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template_string, jsonify
+from flask import Flask, request, render_template_string, send_file, jsonify
 import pandas as pd
 import os
 import subprocess
@@ -21,9 +21,9 @@ HTML_TEMPLATE = """
         <input type="file" id="file" name="file" accept=".csv" required>
         <button type="submit">Submit</button>
     </form>
-    {% if predictions is not none %}
+    {% if download_link %}
         <h2>Prediction Results:</h2>
-        <pre>{{ predictions }}</pre>
+        <a href="{{ download_link }}" download>Download Predictions</a>
     {% endif %}
 </body>
 </html>
@@ -31,7 +31,7 @@ HTML_TEMPLATE = """
 
 @app.route("/", methods=["GET"])
 def home():
-    return render_template_string(HTML_TEMPLATE, predictions=None)
+    return render_template_string(HTML_TEMPLATE, download_link=None)
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -52,14 +52,19 @@ def predict():
 
         # 调用 predict.py 进行预测
         try:
-            result = subprocess.check_output(["python", "predict.py", input_path], universal_newlines=True)
+            subprocess.check_output(["python", "predict.py", input_path], universal_newlines=True)
         except subprocess.CalledProcessError as e:
             return f"Error running prediction: {e.output}", 500
 
-        # 将结果返回给用户
-        return render_template_string(HTML_TEMPLATE, predictions=result)
+        # 返回生成的 predictions.csv 文件
+        output_path = "predictions.csv"
+        return render_template_string(HTML_TEMPLATE, download_link=output_path)
 
     return "Invalid file format. Please upload a CSV file.", 400
+
+@app.route("/predictions.csv", methods=["GET"])
+def download_predictions():
+    return send_file("predictions.csv", as_attachment=True)
 
 if __name__ == "__main__":
     # 启动 HTTPS 服务
