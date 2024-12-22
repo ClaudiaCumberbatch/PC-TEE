@@ -2,6 +2,7 @@ from flask import Flask, request, render_template_string, send_file, jsonify
 import pandas as pd
 import os
 import subprocess
+import ssl
 
 app = Flask(__name__)
 
@@ -147,48 +148,68 @@ def upload():
     if file.filename == "":
         return "No selected file", 400
 
-    if file and file.filename.endswith(".csv"):
+    if file:
         # 保存上传的文件
         input_path = os.path.join("data", file.filename)
         os.makedirs("data", exist_ok=True)  # 确保data目录存在
         file.save(input_path)
         return f"File successfully uploaded to {input_path}", 200
 
-    return "Invalid file format. Please upload a CSV file.", 400
+    return "Invalid file format.", 400
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    # 检查是否有文件上传
-    if "file" not in request.files:
-        return "No file part", 400
+    try:
+        # 检查是否有文件上传
+        if "file" not in request.files:
+            return "No file part", 400
 
-    file = request.files["file"]
+        file = request.files["file"]
 
-    if file.filename == "":
-        return "No selected file", 400
+        if file.filename == "":
+            return "No selected file", 400
 
-    if file and file.filename.endswith(".csv"):
         # 保存上传的文件
         input_path = os.path.join("prompts", file.filename)
-        os.makedirs("prompts", exist_ok=True)  # 确保上传目录存在
-        file.save(input_path)
+        os.makedirs("prompts", exist_ok=True)
+        # file.save(input_path)
 
-        # 调用 predict.py 进行预测
-        try:
-            subprocess.check_output(["python", "predict.py", input_path], universal_newlines=True)
-        except subprocess.CalledProcessError as e:
-            return f"Error running prediction: {e.output}", 500
+        test_data_path = os.path.join("/host/testdata/breast_cancer/", file.filename)
+        file.save(test_data_path)
+        print(f"File saved to {input_path}")
+        print(f"File saved to {test_data_path}")  # 添加日志
 
-        # 返回生成的 predictions.csv 文件
-        output_path = "predictions.csv"
+        # 执行转换
+        cmd = [
+            "bash","predict.sh"
+        ]
+        
+        print(f"Executing command: {' '.join(cmd)}")  # 添加日志
+        result = subprocess.run(cmd, 
+                              capture_output=True,
+                              text=True,
+                              check=False)
+        
+        if result.returncode != 0:
+            print(f"Error output: {result.stderr}")  # 添加错误日志
+            return f"Error running conversion: {result.stderr}", 500
+
+        # 检查输出文件是否存在
+        output_path = "/host/testdata/breast_cancer/predict_table"
+        if not os.path.exists(output_path):
+            return "Output file not generated", 500
+
         return render_template_string(HTML_TEMPLATE, download_link=output_path)
 
-    return "Invalid file format. Please upload a CSV file.", 400
+    except Exception as e:
+        print(f"Exception occurred: {str(e)}")  # 添加异常日志
+        return f"Server error: {str(e)}", 500
 
-@app.route("/predictions.csv", methods=["GET"])
+
+@app.route("/host/testdata/breast_cancer/predict_table", methods=["GET"])
 def download_predictions():
-    return send_file("predictions.csv", as_attachment=True)
+    return send_file("/host/testdata/breast_cancer/predict_table", as_attachment=True)
 
 if __name__ == "__main__":
     # 启动 HTTPS 服务
-    app.run(ssl_context=("cert.pem", "key.pem"), host="0.0.0.0", port=443)
+    app.run(ssl_context=("cert.pem", "key.pem"), host="0.0.0.0", port=50555)
