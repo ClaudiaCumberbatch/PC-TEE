@@ -90,6 +90,10 @@ HTML_TEMPLATE = """
         .download-link {
             margin-top: 20px;
         }
+        .error-message {
+            color: red;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -128,6 +132,17 @@ HTML_TEMPLATE = """
                 </div>
             {% endif %}
         </div>
+        <div class="form-container">
+            <h2>Start Training</h2>
+            <form method="POST" action="/start_training">
+                <button type="submit">Start Training</button>
+            </form>
+            {% if error_message %}
+                <div class="error-message">
+                    <p>{{ error_message }}</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>
@@ -135,7 +150,7 @@ HTML_TEMPLATE = """
 
 @app.route("/", methods=["GET"])
 def home():
-    return render_template_string(HTML_TEMPLATE, download_link=None)
+    return render_template_string(HTML_TEMPLATE, download_link=None, error_message=None)
 
 @app.route("/upload", methods=["POST"])
 def upload():
@@ -199,12 +214,39 @@ def predict():
         if not os.path.exists(output_path):
             return "Output file not generated", 500
 
-        return render_template_string(HTML_TEMPLATE, download_link=output_path)
+        return render_template_string(HTML_TEMPLATE, download_link=output_path, error_message=None)
 
     except Exception as e:
         print(f"Exception occurred: {str(e)}")  # 添加异常日志
         return f"Server error: {str(e)}", 500
 
+@app.route("/start_training", methods=["POST"])
+def start_training():
+    try:
+        # 检查 data 目录下是否有 alice.csv.enc 和 bob.csv.enc
+        alice_file = os.path.join("data", "alice.csv.enc")
+        bob_file = os.path.join("data", "bob.csv.enc")
+
+        if not os.path.exists(alice_file) or not os.path.exists(bob_file):
+            error_message = "Required files alice.csv.enc and bob.csv.enc not found in data directory."
+            return render_template_string(HTML_TEMPLATE, download_link=None, error_message=error_message)
+
+        # 执行训练脚本
+        cmd = ["bash", "train.sh"]
+        print(f"Executing command: {' '.join(cmd)}")  # 添加日志
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+        if result.returncode != 0:
+            print(f"Error output: {result.stderr}")  # 添加错误日志
+            error_message = f"Error running training script: {result.stderr}"
+            return render_template_string(HTML_TEMPLATE, download_link=None, error_message=error_message)
+
+        return render_template_string(HTML_TEMPLATE, download_link=None, error_message=None)
+
+    except Exception as e:
+        print(f"Exception occurred: {str(e)}")  # 添加异常日志
+        error_message = f"Server error: {str(e)}"
+        return render_template_string(HTML_TEMPLATE, download_link=None, error_message=error_message)
 
 @app.route("/host/testdata/breast_cancer/predict_table", methods=["GET"])
 def download_predictions():
